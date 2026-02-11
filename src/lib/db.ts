@@ -2,114 +2,171 @@ import pg from 'pg';
 import type { Todo } from '../types.js';
 
 /**
- * Gets a PostgreSQL connection pool.
- * @returns Connection pool
+ * Höldum einum sameiginlegum pool fyrir allt appið
+ * (ekki búa til nýjan fyrir hvert query).
+ */
+let pool: pg.Pool | null = null;
+
+/**
+ * Sækir PostgreSQL tengipool.
+ * @returns Tengipool
  */
 function getPool(): pg.Pool {
   const { DATABASE_URL } = process.env;
 
   if (!DATABASE_URL) {
-    console.error('DATABASE_URL not set');
+    console.error('DATABASE_URL ekki skilgreind');
     process.exit(1);
   }
 
-  const pool = new pg.Pool({
-    connectionString: DATABASE_URL,
-  });
+  if (!pool) {
+    pool = new pg.Pool({
+      connectionString: DATABASE_URL,
+    });
 
-  pool.on('error', (err: Error) => {
-    console.error('Unexpected error on idle client', err);
-    process.exit(-1);
-  });
+    pool.on('error', (err: Error) => {
+      console.error('Óvænt villa í idle client', err);
+      process.exit(-1);
+    });
+  }
 
   return pool;
 }
 
 /**
- * Run a query against the database.
- * Generic to allow typing the result rows.
- * @param q Query to run.
- * @param values Values to parameterize the query with.
- * @returns Query result.
+ * Keyrir SQL fyrirspurn á gagnagrunn.
+ * Generic til að geta týpað niðurstöður.
+ * @param q SQL fyrirspurn
+ * @param values Gildi fyrir parametrized query
+ * @returns Niðurstaða eða null ef villa kemur upp
  */
 async function query<T extends pg.QueryResultRow>(
   q: string,
   values: unknown[] = [],
 ): Promise<pg.QueryResult<T> | null> {
-  const pool = getPool();
-  const client = await pool.connect();
   try {
-    return await client.query<T>(q, values);
+    const p = getPool();
+    return await p.query<T>(q, values);
   } catch (err) {
-    console.error('Database query error', err);
+    console.error('Villa í gagnagrunnsfyrirspurn', err);
     return null;
-  } finally {
-    client.release();
   }
 }
 
+type TodoRow = pg.QueryResultRow & {
+  id: number;
+  title: string;
+  finished: boolean;
+  created: Date;
+};
+
 /**
- * Initialize the database by creating necessary table.
- * @returns True if the initialization succeeded, false otherwise.
+ * Upphafsstillir gagnagrunn með því að búa til töflu ef hún er ekki til.
+ * @returns true ef tókst, false annars
  */
 export async function init(): Promise<boolean> {
-  // búum til töfluna okkar ef hún er ekki til
-  // SQL til þess:
-  /*
-  CREATE TABLE IF NOT EXISTS todos (
+  const sql = `
+    CREATE TABLE IF NOT EXISTS todos (
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       finished BOOLEAN NOT NULL DEFAULT false,
       created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-    )
-  */
+    );
+  `;
+
+  const res = await query(sql);
+  return res !== null;
 }
 
 /**
- * Get all todo items from the database.
- * @returns All todo items, or null on error.
+ * Sækir öll verkefni úr gagnagrunni.
+ * @returns Listi af verkefnum eða null ef villa
  */
 export async function listTodos(): Promise<Todo[] | null> {
-  // SELECT id, title, finished FROM todos ORDER BY finished ASC, created DESC
+  const sql = `
+    SELECT id, title, finished, created
+    FROM todos
+    ORDER BY finished ASC, created DESC
+  `;
+
+  const res = await query<TodoRow>(sql);
+  if (!res) return null;
+
+  return res.rows as unknown as Todo[];
 }
 
 /**
- * Create a new todo item in the database.
- * @param title Title of the todo item to create.
- * @returns Created todo item or null on error.
+ * Býr til nýtt verkefni.
+ * @param title Titill verkefnis
+ * @returns Nýtt verkefni eða null ef villa
  */
 export async function createTodo(title: string): Promise<Todo | null> {
-  // INSERT INTO todos (title) VALUES ($1) RETURNING id, title, finished
+  const sql = `
+    INSERT INTO todos (title)
+    VALUES ($1)
+    RETURNING id, title, finished, created
+  `;
+
+  const res = await query<TodoRow>(sql, [title]);
+  if (!res) return null;
+
+  return (res.rows[0] ?? null) as unknown as Todo | null;
 }
 
 /**
- * Update a todo item in the database.
- * @param id ID of the todo item to update.
- * @param title New title of the todo item.
- * @param finished New finished status of the todo item.
- * @returns Updated todo item or null on error.
+ * Uppfærir verkefni.
+ * @param id Auðkenni verkefnis
+ * @param title Nýr titill
+ * @param finished Ný staða (klárað eða ekki)
+ * @returns Uppfært verkefni eða null ef villa
  */
 export async function updateTodo(
   id: number,
   title: string,
   finished: boolean,
 ): Promise<Todo | null> {
-  // UPDATE todos SET title = $1, finished = $2 WHERE id = $3 RETURNING id, title, finished
+  const sql = `
+    UPDATE todos
+    SET title = $1, finished = $2
+    WHERE id = $3
+    RETURNING id, title, finished, created
+  `;
+
+  const res = await query<TodoRow>(sql, [title, finished, id]);
+  if (!res) return null;
+
+  return (res.rows[0] ?? null) as unknown as Todo | null;
 }
 
 /**
- * Delete a todo item from the database.
- * @param id ID of the todo item to delete.
- * @returns True if the todo item was deleted, false if not found, or null on error.
+ * Eyðir verkefni.
+ * @param id Auðkenni verkefnis
+ * @returns true ef eytt, false ef fannst ekki, null ef villa
  */
 export async function deleteTodo(id: number): Promise<boolean | null> {
-  // DELETE FROM todos WHERE id = $1
+  const sql = `
+    DELETE FROM todos
+    WHERE id = $1
+  `;
+
+  const res = await query(sql, [id]);
+  if (!res) return null;
+
+  return (res.rowCount ?? 0) > 0;
 }
 
 /**
- * Delete all finished todo items from the database.
- * @returns Number of deleted todo items, or null on error.
+ * Eyðir öllum kláruðum verkefnum.
+ * @returns Fjöldi eyddra verkefna eða null ef villa
  */
 export async function deleteFinishedTodos(): Promise<number | null> {
-  // DELETE FROM todos WHERE finished = true
+  const sql = `
+    DELETE FROM todos
+    WHERE finished = true
+  `;
+
+  const res = await query(sql);
+  if (!res) return null;
+
+  return res.rowCount ?? 0;
 }

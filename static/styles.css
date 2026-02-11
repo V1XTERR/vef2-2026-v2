@@ -1,1 +1,125 @@
-/* todo stílar, notið úr v8 í vef1-2025! */
+:root {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  line-height: 1.4;
+}
+
+body {
+  margin: 0;
+  padding: 32px 16px;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.header h1 {
+  margin: 0 0 6px 0;
+  font-size: 40px;
+}
+
+.muted {
+  margin: 0 0 18px 0;
+  opacity: 0.75;
+}
+
+.card {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  font-size: 16px;
+}
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  opacity: 0.85;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.todo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: white;
+  cursor: pointer;
+  width: 100%;
+}
+
+.todo:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.todo.done .title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.check {
+  width: 28px;
+}
+
+.icon {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.empty {
+  margin: 14px 0 0 0;
+  opacity: 0.75;
+}
+
+.footer {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
