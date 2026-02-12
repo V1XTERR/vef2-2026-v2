@@ -38,7 +38,7 @@ export function TodoPage({ todos }: Props) {
             </form>
 
             {todos.length === 0 ? (
-              <p className="empty">Engin verkefni enn. Bættu við fyrsta 👀</p>
+              <p className="empty">Engin verkefni enn. Bættu við fyrsta </p>
             ) : (
               <ul className="list">
                 {todos.map((todo) => (

@@ -1,10 +1,7 @@
 import pg from 'pg';
 import type { Todo } from '../types.js';
 
-/**
- * Höldum einum sameiginlegum pool fyrir allt appið
- * (ekki búa til nýjan fyrir hvert query).
- */
+
 let pool: pg.Pool | null = null;
 
 /**
@@ -34,8 +31,7 @@ function getPool(): pg.Pool {
 }
 
 /**
- * Keyrir SQL fyrirspurn á gagnagrunn.
- * Generic til að geta týpað niðurstöður.
+ 
  * @param q SQL fyrirspurn
  * @param values Gildi fyrir parametrized query
  * @returns Niðurstaða eða null ef villa kemur upp
@@ -61,7 +57,6 @@ type TodoRow = pg.QueryResultRow & {
 };
 
 /**
- * Upphafsstillir gagnagrunn með því að búa til töflu ef hún er ekki til.
  * @returns true ef tókst, false annars
  */
 export async function init(): Promise<boolean> {
@@ -79,7 +74,6 @@ export async function init(): Promise<boolean> {
 }
 
 /**
- * Sækir öll verkefni úr gagnagrunni.
  * @returns Listi af verkefnum eða null ef villa
  */
 export async function listTodos(): Promise<Todo[] | null> {

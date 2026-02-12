@@ -3,20 +3,19 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default [
-  {
-    ignores: ['dist/**', 'node_modules/**'],
-  },
+  { ignores: ['dist/**', 'node_modules/**'] },
 
   js.configs.recommended,
 
   ...tseslint.configs.recommended,
 
   {
-    files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      globals: globals.node,
-    },
-    rules: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
     },
   },
 ];
+ß
